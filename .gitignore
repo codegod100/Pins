@@ -23,3 +23,14 @@ repo/
 # IDE dirs
 .vscode/
 .idea/
+
+# Nix
+result
+result-*
+.direnv/
+
+# Zig build
+zig-out/
+zig-cache/
+pins-resources.c
+data/gschemas.compiled
