@@ -22,6 +22,7 @@
 
 #include "pins-app-icon.h"
 #include "pins-locale-utils-private.h"
+#include "path-utils.h"
 
 struct _PinsAppTile
 {
@@ -32,6 +33,7 @@ struct _PinsAppTile
     PinsAppIcon *icon;
     AdwBin *invisible_glyph;
     GtkLabel *title;
+    GtkLabel *path;
 };
 
 G_DEFINE_TYPE (PinsAppTile, pins_app_tile, GTK_TYPE_BOX);
@@ -48,6 +50,7 @@ pins_app_tile_update_appearance (PinsAppTile *self,
 {
     const gchar *title_key;
     gboolean invisible;
+    gchar *display_path;
 
     title_key = _pins_join_key_locale (
         G_KEY_FILE_DESKTOP_KEY_NAME,
@@ -56,6 +59,18 @@ pins_app_tile_update_appearance (PinsAppTile *self,
 
     gtk_label_set_text (
         self->title, pins_desktop_file_get_string (desktop_file, title_key));
+
+    /* Show the path to the desktop file - uses Zig implementation */
+    display_path = get_display_path (pins_desktop_file_get_user_file (desktop_file));
+    if (display_path != NULL)
+    {
+        gtk_label_set_text (self->path, display_path);
+        g_free (display_path);
+    }
+    else
+    {
+        gtk_label_set_text (self->path, "");
+    }
 
     invisible = !pins_desktop_file_is_shown (desktop_file);
 
@@ -113,6 +128,7 @@ pins_app_tile_class_init (PinsAppTileClass *klass)
     gtk_widget_class_bind_template_child (widget_class, PinsAppTile,
                                           invisible_glyph);
     gtk_widget_class_bind_template_child (widget_class, PinsAppTile, title);
+    gtk_widget_class_bind_template_child (widget_class, PinsAppTile, path);
 }
 
 static GdkContentProvider *

@@ -27,6 +27,7 @@
 #include "pins-key-row.h"
 #include "pins-locale-utils-private.h"
 #include "pins-pick-icon-popover.h"
+#include "path-utils.h"
 
 struct _PinsFileView
 {
@@ -43,6 +44,8 @@ struct _PinsFileView
     PinsPickIconPopover *pick_icon_popover;
     PinsKeyRow *name_row;
     PinsKeyRow *comment_row;
+    AdwActionRow *path_row;
+    GtkButton *copy_path_button;
     GtkSwitch *autostart_switch;
     GtkSwitch *invisible_switch;
     GtkListBox *keys_listbox;
@@ -92,6 +95,23 @@ pins_file_view_update_title (PinsFileView *self)
             pins_desktop_file_get_string (self->desktop_file, title_key));
     else
         adw_window_title_set_title (self->window_title, "");
+}
+
+void
+pins_file_view_update_path (PinsFileView *self)
+{
+    gchar *display_path;
+
+    display_path = get_display_path (pins_desktop_file_get_user_file (self->desktop_file));
+    if (display_path != NULL)
+    {
+        adw_action_row_set_subtitle (self->path_row, display_path);
+        g_free (display_path);
+    }
+    else
+    {
+        adw_action_row_set_subtitle (self->path_row, "");
+    }
 }
 
 void
@@ -254,6 +274,7 @@ pins_file_view_set_desktop_file (PinsFileView *self,
     self->keys = pins_desktop_file_get_keys (self->desktop_file);
 
     pins_file_view_update_title (self);
+    pins_file_view_update_path (self);
     pins_file_view_update_reset_icon_button_visible (self);
     pins_app_icon_set_desktop_file (self->icon, self->desktop_file);
     pins_pick_icon_popover_set_desktop_file (self->pick_icon_popover,
@@ -338,6 +359,10 @@ pins_file_view_class_init (PinsFileViewClass *klass)
     gtk_widget_class_bind_template_child (widget_class, PinsFileView,
                                           comment_row);
     gtk_widget_class_bind_template_child (widget_class, PinsFileView,
+                                          path_row);
+    gtk_widget_class_bind_template_child (widget_class, PinsFileView,
+                                          copy_path_button);
+    gtk_widget_class_bind_template_child (widget_class, PinsFileView,
                                           autostart_switch);
     gtk_widget_class_bind_template_child (widget_class, PinsFileView,
                                           invisible_switch);
@@ -391,6 +416,21 @@ reset_icon_button_clicked_cb (PinsFileView *self)
 {
     pins_desktop_file_reset_key (self->desktop_file,
                                  G_KEY_FILE_DESKTOP_KEY_ICON);
+}
+
+void
+copy_path_button_clicked_cb (PinsFileView *self)
+{
+    gchar *display_path;
+    GdkClipboard *clipboard;
+
+    display_path = get_display_path (pins_desktop_file_get_user_file (self->desktop_file));
+    if (display_path == NULL)
+        return;
+
+    clipboard = gtk_widget_get_clipboard (GTK_WIDGET (self));
+    gdk_clipboard_set_text (clipboard, display_path);
+    g_free (display_path);
 }
 
 void
@@ -460,6 +500,10 @@ pins_file_view_init (PinsFileView *self)
 
     g_signal_connect_object (self->reset_icon_button, "clicked",
                              G_CALLBACK (reset_icon_button_clicked_cb), self,
+                             G_CONNECT_SWAPPED);
+
+    g_signal_connect_object (self->copy_path_button, "clicked",
+                             G_CALLBACK (copy_path_button_clicked_cb), self,
                              G_CONNECT_SWAPPED);
 
     g_signal_connect_object (self->add_key_button, "activated",

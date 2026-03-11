@@ -37,8 +37,22 @@
     </child>
     <child>
       <object class="GtkLabel" id="title">
-        <property name="ellipsize">end</property>
-        <property name="max-width-chars">12</property>
+        <property name="wrap">true</property>
+        <property name="wrap-mode">word-char</property>
+        <property name="justify">center</property>
+        <property name="lines">2</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel" id="path">
+        <property name="wrap">true</property>
+        <property name="wrap-mode">word-char</property>
+        <property name="justify">center</property>
+        <property name="lines">2</property>
+        <style>
+          <class name="caption" />
+          <class name="dim-label" />
+        </style>
       </object>
     </child>
   </template>

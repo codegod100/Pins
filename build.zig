@@ -58,7 +58,18 @@ pub fn build(b: *Build) !void {
         if (flag.len > 0) try cflags.append(b.allocator, b.dupe(flag));
     }
 
-    // Create root module
+    // Compile Zig path-utils as object
+    const zig_obj = b.addObject(.{
+        .name = "path-utils",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/path-utils.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        }),
+    });
+
+    // Create root module for the executable (C code)
     const root_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
@@ -76,6 +87,9 @@ pub fn build(b: *Build) !void {
     
     // Ensure gresources are generated before compiling
     exe.step.dependOn(&gen_resources.step);
+
+    // Link Zig object
+    exe.addObject(zig_obj);
 
     // C sources
     const c_sources = [_][]const u8{
@@ -142,7 +156,7 @@ pub fn build(b: *Build) !void {
 
     // Run step
     const run_cmd = b.addRunArtifact(exe);
-    run_cmd.step.dependOn(b.getInstallStep());
+    run_cmd.step.dependOn(&compile_schemas.step);
     run_cmd.setEnvironmentVariable("GSETTINGS_SCHEMA_DIR", b.getInstallPath(.prefix, "share/glib-2.0/schemas"));
 
     const run_step = b.step("run", "Run the application");
